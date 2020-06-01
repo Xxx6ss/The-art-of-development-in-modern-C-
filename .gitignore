@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+Translater/.DS_Store
+*.pbxproj
+Translater/Translater.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+Translater/Translater.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.plist
+*.xcuserstate
+Translater/Translater.xcodeproj/project.xcworkspace/xcuserdata/andrewkireev.xcuserdatad/UserInterfaceState.xcuserstate
+*.xcbkptlist
+*.plist
+Translater/Translater.xcodeproj/xcuserdata/andrewkireev.xcuserdatad/xcschemes/xcschememanagement.plist
+*.plist
+*.xcworkspacedata
