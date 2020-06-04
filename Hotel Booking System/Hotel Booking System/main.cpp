@@ -37,26 +37,31 @@ public:
     }
     
     void book(int client_id, const std::string& hotel_name, int room_count, int64_t& time) {
-        if (book_time_[hotel_name].size() < 20)
-            book_time_[hotel_name].resize(20);
+        if (book_time_[hotel_name].size() < 10)
+            book_time_[hotel_name].resize(10);
 
         hotel_clients_[hotel_name].push_back(client_id);
         book_time_[hotel_name][client_id] = time;
         rooms_time_[hotel_name].push_back(std::pair(room_count, time));
-        for (auto item : book_time_[hotel_name]) {
-            if (!(item >=  time || item < -DAY_TIME_ || item == 0)) {
-                auto iter = std::find(book_time_[hotel_name].begin(), book_time_[hotel_name].end(), item);
-                book_time_[hotel_name].erase(iter);
+        for (auto it : book_time_) {
+            for (auto item : it.second) {
+                if ((item >  time || item < -DAY_TIME_) && item == 0) {
+                    auto iter = std::find(book_time_[hotel_name].begin(), book_time_[hotel_name].end(), item);
+    //                book_time_[hotel_name].erase(iter);
+                    *iter = 0;
+                }
             }
         }
-        for (auto item : rooms_time_[hotel_name]) {
-            if (!(item.second <=  DAY_TIME_ && item.second > -(DAY_TIME_))) {
-//                auto iter = std::find(rooms_time_[hotel_name].begin(), rooms_time_[hotel_name].end(),
-//                                      [](std::pair<int, int64_t> lhs, std::pair<int, int64_t> rhs) {
-//                    return lhs.first == rhs.first && lhs.second == rhs.second;
-//                });
-                item.first = 0;
-                item.second = 0;
+        for (auto it = rooms_time_.begin(); it != rooms_time_.end(); ++it) {
+            for (auto item = it->second.begin(); item != it->second.end(); ++item) {
+                if ((item->second >  time || item->second < -DAY_TIME_) && item->second == 0) {
+    //                auto iter = std::find(rooms_time_[hotel_name].begin(), rooms_time_[hotel_name].end(),
+    //                                      [](std::pair<int, int64_t> lhs, std::pair<int, int64_t> rhs) {
+    //                    return lhs.first == rhs.first && lhs.second == rhs.second;
+    //                });
+                    item->first = 0;
+                    item->second = 0;
+                }
             }
         }
         
