@@ -45,7 +45,7 @@ public:
         rooms_time_[hotel_name].push_back(std::pair(room_count, time));
         for (auto it : book_time_) {
             for (auto item : it.second) {
-                if ((item >  time || item < -DAY_TIME_) && item == 0) {
+                if ((time - item >= DAY_TIME_ || item < -DAY_TIME_) && item != 0) {
                     auto iter = std::find(book_time_[hotel_name].begin(), book_time_[hotel_name].end(), item);
     //                book_time_[hotel_name].erase(iter);
                     *iter = 0;
@@ -54,7 +54,7 @@ public:
         }
         for (auto it = rooms_time_.begin(); it != rooms_time_.end(); ++it) {
             for (auto item = it->second.begin(); item != it->second.end(); ++item) {
-                if ((item->second >  time || item->second < -DAY_TIME_) && item->second == 0) {
+                if ((time - item->second >=  DAY_TIME_ || item->second < -DAY_TIME_) && item->second != 0) {
     //                auto iter = std::find(rooms_time_[hotel_name].begin(), rooms_time_[hotel_name].end(),
     //                                      [](std::pair<int, int64_t> lhs, std::pair<int, int64_t> rhs) {
     //                    return lhs.first == rhs.first && lhs.second == rhs.second;
