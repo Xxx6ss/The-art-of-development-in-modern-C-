@@ -41,26 +41,43 @@ vector<Group<String>> GroupHeavyStrings(vector<String> strings) {
     vector<Group<String>> groups;
     for (auto item : strings) {
         if (groups.size() == 0) {
-            auto i  = vector<string>{string("al")};
-            auto str = string(item);
-            groups.push_back(vector<string>{string("al")});
+            groups.push_back(vector<string>{string(item)});
             continue;
         }
         int counter = 0;
-        for (auto symbol : item) {
-            for (auto group : groups) {
-                if (group[0].find(symbol) == group[0].npos) {
+        int iterations = 0;
+        bool added = false;
+        auto it = groups.begin();
+        for (auto symbol = item.begin(); symbol != item.end(); ++symbol) {
+            if (added == true)
+                break;
+            ++iterations;
+            while (true) {
+                if (it == groups.end()) {
+                    groups.push_back(vector<string>{string(item)});
+                    added = true;
+                    break;
+                }
+                
+                if ((*it)[0].find(*symbol) == (*it)[0].npos) {
                     counter = 0;
+                    ++it;
+                    symbol = item.begin();
                     continue;
                 }
                 else
                     ++counter;
                 if (counter == item.size()) {
-                    group.push_back(item);
+                    it->push_back(item);
+                    added = true;
                     break;
                 }
+                break;
             }
         }
+//        if (iterations == item.size() && added == false) {
+//            groups.push_back(vector<string>{string(item)});
+//        }
     }
     return groups;
 }
