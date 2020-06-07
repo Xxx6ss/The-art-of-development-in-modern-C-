@@ -9,6 +9,7 @@
 #include "test_runner.h"
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -39,45 +40,17 @@ vector<Group<String>> GroupHeavyStrings(vector<String> strings) {
     // Напишите реализацию функции,
     // использовав не более 1 копирования каждого символа
     vector<Group<String>> groups;
-    for (auto item : strings) {
-        if (groups.size() == 0) {
-            groups.push_back(vector<string>{string(item)});
-            continue;
-        }
-        int counter = 0;
-        int iterations = 0;
-        bool added = false;
-        auto it = groups.begin();
-        for (auto symbol = item.begin(); symbol != item.end(); ++symbol) {
-            if (added == true)
-                break;
-            ++iterations;
-            while (true) {
-                if (it == groups.end()) {
-                    groups.push_back(vector<string>{string(item)});
-                    added = true;
-                    break;
-                }
-                
-                if ((*it)[0].find(*symbol) == (*it)[0].npos) {
-                    counter = 0;
-                    ++it;
-                    symbol = item.begin();
-                    continue;
-                }
-                else
-                    ++counter;
-                if (counter == item.size()) {
-                    it->push_back(item);
-                    added = true;
-                    break;
-                }
-                break;
-            }
-        }
-//        if (iterations == item.size() && added == false) {
-//            groups.push_back(vector<string>{string(item)});
-//        }
+    map<String, Group<String>> grouped_strings;
+    for (auto str : strings) {
+        string uniq_chars = str;
+        sort(uniq_chars.begin(), uniq_chars.end());
+        uniq_chars.erase(unique(uniq_chars.begin(), uniq_chars.end()),
+                                    uniq_chars.end());
+        grouped_strings[uniq_chars].push_back(move(str));
+    }
+    
+    for (auto& item : grouped_strings) {
+        groups.push_back(move(item.second));
     }
     return groups;
 }
