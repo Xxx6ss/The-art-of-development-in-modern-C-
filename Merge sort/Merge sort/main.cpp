@@ -16,20 +16,17 @@ using namespace std;
 
 template <typename RandomIt>
 void MergeSort(RandomIt range_begin, RandomIt range_end) {
-    if (range_end == range_begin || range_begin + 2 == range_end)
+    if ((range_end - range_begin) < 2)
         return;
     
-    vector<typename RandomIt::value_type> vec(make_move_iterator(range_begin), make_move_iterator(range_end));
+    vector<typename RandomIt::value_type> vec(make_move_iterator(range_begin),
+                                              make_move_iterator(range_end));
     
-    size_t length = (range_end - range_begin) / 3;
+    size_t length = vec.size() / 3;
     
-    vector part_1(make_move_iterator(vec.begin()), make_move_iterator(vec.begin() + length));
-    vector part_2(make_move_iterator(vec.begin() + length), make_move_iterator(vec.begin() + 2 * length));
-    vector part_3(make_move_iterator(vec.begin() + 2 * length), make_move_iterator(vec.end()));
-    
-    MergeSort(part_1.begin(), part_1.end());
-    MergeSort(part_2.begin(), part_2.end());
-    MergeSort(part_3.begin(), part_3.end());
+    MergeSort(vec.begin(), vec.begin() + length);
+    MergeSort(vec.begin() + length, vec.begin() + 2 * length);
+    MergeSort(vec.begin() + 2 * length, vec.end());
     
     
     vector<typename RandomIt::value_type> temper_vec;
