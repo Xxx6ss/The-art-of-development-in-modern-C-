@@ -26,7 +26,6 @@ vector<Sentence<Token>> SplitIntoSentences(vector<Token> tokens) {
 
     vector<Sentence<Token>> sentences;
     Sentence<Token> sentence;
-    auto iter = sentences.begin();
     for (auto item = tokens.begin(); item != tokens.end(); ++item) {
             
         if (item->IsEndSentencePunctuation() == false ||
@@ -38,7 +37,7 @@ vector<Sentence<Token>> SplitIntoSentences(vector<Token> tokens) {
             sentence.clear();
         }
     }
-    if (sentences.size() == 0) {
+    if (sentences.size() == 0 || sentence.size() != 0) {
         sentences.push_back(move(sentence));
     }
     return sentences;
@@ -91,6 +90,7 @@ void TestSplitting() {
 
 int main() {
   TestRunner tr;
+    auto test = SplitIntoSentences(vector<TestToken>({{"Split"}, {"into"}, {"sentences"}, {"!", true}, {"!", true}, {"Without"}, {"copies"}, {".", true}, {"Op"}, {"hop"}}));
   RUN_TEST(tr, TestSplitting);
   return 0;
 }
