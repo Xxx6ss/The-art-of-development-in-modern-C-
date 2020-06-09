@@ -45,7 +45,8 @@ public:
   // Добавить объект с нулевым приоритетом
   // с помощью перемещения и вернуть его идентификатор
     Id Add(T object) {
-        conteiner[last_id] = pair<T, size_t>(move(object), 0);
+        data_priority_.push_back({move(object), 0});
+        id_priority_.insert({last_id, 0});
         ++last_id;
         return last_id - 1;
     }
@@ -58,6 +59,8 @@ public:
            IdOutputIt ids_begin) {
       while (range_begin != range_end) {
           *ids_begin = Add(*range_begin);
+          ++ids_begin;
+          ++range_begin;
       }
   }
 
@@ -65,46 +68,47 @@ public:
   // Определить, принадлежит ли идентификатор какому-либо
   // хранящемуся в контейнере объекту
     bool IsValid(Id id) const {
-        if (conteiner.count(id) == 1)
+        if (data_priority_[id] > 0)
             return true;
         return false;
     }
 
   // Получить объект по идентификатору
     const T& Get(Id id) const {
-        return conteiner[id];
+        return data_priority_[id].fist;
     }
 
 
   // Увеличить приоритет объекта на 1
     void Promote(Id id) {
-        ++conteiner[id].second;
     }
 
 
   // Получить объект с максимальным приоритетом и его приоритет
     pair<const T&, int> GetMax() const {
-        auto el = find(conteiner.begin(), conteiner.end(),
-                      [](std::map<Id, pair<T, size_t>> lhs, std::map<Id, pair<T, size_t>> rhs){
-            return lhs.second.second == rhs.second.second;
-        });
-        return el.second;
+        auto max_priority = *--id_priority_.end();
+        auto deleted = pair<T, size_t>(move(data_priority_[max_priority.second].first),
+                                                  move(data_priority_[max_priority.second].second));
+        return deleted;
     }
 
   // Аналогично GetMax, но удаляет элемент из контейнера
     pair<T, int> PopMax() {
-        auto el = find(conteiner.begin(), conteiner.end(),
-                      [](std::map<Id, pair<T, size_t>> lhs, std::map<Id, pair<T, size_t>> rhs){
-            return lhs.second.second == rhs.second.second;
-        });
-        conteiner.erase(el);
-        return el.second;
+        auto max_priority = *--id_priority_.end();
+        auto deleted = pair<T, size_t>(move(data_priority_[max_priority.second].first),
+                                                  move(data_priority_[max_priority.second].second));
+        
+        id_priority_.erase(max_priority);
+        data_priority_.erase(data_priority_.begin() + max_priority.second);
+        return deleted;
     }
 
 private:
   // Приватные поля и методы
-    std::map<Id, pair<T, size_t>> conteiner;
-    Id last_id = 0;
+    vector<pair<T, size_t>> data_priority_;
+    set<pair<Id, size_t>> id_priority_;
+    size_t last_id = 0;
+    
 };
 
 
