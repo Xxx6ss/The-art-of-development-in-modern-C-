@@ -11,29 +11,12 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <set>
-#include <utility>
 #include <vector>
+#include <unordered_map>
 
 using namespace std;
 
-template <typename T>
-class Type{
-public:
-    Type(T&& obj) : data_(move(obj)),
-                    priority_(0)  {}
-    
-    void operator= (Type<T>&& type) {
-        data_ = move(type.data_);
-        priority_ = move(type.priority_);
-//        return *this;
-        
-    }
-    
-    
-    T data_;
-    size_t priority_;
-};
+
 
 
 template <typename T>
@@ -47,6 +30,7 @@ public:
     Id Add(T object) {
         data[last_id] = move(object);
         priority[last_id] = 0;
+        to_find_priority_[0].push_back(last_id);
         ++last_id;
         return last_id - 1;
     }
@@ -75,42 +59,55 @@ public:
 
   // Получить объект по идентификатору
     const T& Get(Id id) const {
-        return data[id];
+        return data.at(id);
     }
 
 
   // Увеличить приоритет объекта на 1
     void Promote(Id id) {
+        Id present_prior = priority[id];
+        to_find_priority_[present_prior].erase(find(to_find_priority_[present_prior].begin(),
+                                                    to_find_priority_[present_prior].end(), id)
+                                               );
+        
+        to_find_priority_[present_prior + 1].insert(upper_bound(begin(to_find_priority_[present_prior + 1]),
+                                                                end(to_find_priority_[present_prior + 1]), id), id
+                                                    );
+        
+        if (to_find_priority_[present_prior].empty()) {
+            to_find_priority_.erase(present_prior);
+        }
         ++priority[id];
-        if (priority[id] > priority[id_max_priority_])
-            id_max_priority_ = id;
     }
 
 
   // Получить объект с максимальным приоритетом и его приоритет
     pair<const T&, int> GetMax() const {
-        return pair(data[id_max_priority_], priority[id_max_priority_]);
+        auto el = prev(to_find_priority_.end(), 1);
+        return  pair<const T&, int>{data.at(el->second.back()), el->first};
     }
 
   // Аналогично GetMax, но удаляет элемент из контейнера
     pair<T, int> PopMax() {
-       auto element = pair(move(data[id_max_priority_]), priority[id_max_priority_]);
-        data.erase(id_max_priority_);
-        priority.erase(id_max_priority_);
-        int max_priority = - 1;
-        for (pair<int, int> el : priority){
-            if (el.second > max_priority) {
-                max_priority = el.second;
-                id_max_priority_ = el.first;
-            }
-        }
-        return element;
+       auto el = prev(to_find_priority_.end(), 1);
+
+       pair<T, int> res = { move(data[el->second.back()]), el->first };
+        
+       data.erase(el->second.back());
+       priority.erase(el->second.back());
+       to_find_priority_[el->first].pop_back();
+        
+       if (to_find_priority_[el->first].empty()) {
+           to_find_priority_.erase(el->first);
+       }
+       return res;
     }
 
 private:
   // Приватные поля и методы
-    map<int, T> data;
-    map<int, size_t> priority;
+    map<Id, T> data;
+    map<Id, size_t> priority;
+    map<int, vector<Id>> to_find_priority_;
     size_t id_max_priority_ = 0;
     int last_id = 0;
     
@@ -126,32 +123,33 @@ public:
   StringNonCopyable& operator=(StringNonCopyable&&) = default;
 };
 
-void TestNoCopy() {
-  PriorityCollection<StringNonCopyable> strings;
-  const auto white_id = strings.Add("white");
-  const auto yellow_id = strings.Add("yellow");
-  const auto red_id = strings.Add("red");
 
-  strings.Promote(yellow_id);
-  for (int i = 0; i < 2; ++i) {
-    strings.Promote(red_id);
-  }
-  strings.Promote(yellow_id);
-  {
-    const auto item = strings.PopMax();
-    ASSERT_EQUAL(item.first, "red");
-    ASSERT_EQUAL(item.second, 2);
-  }
-  {
-    const auto item = strings.PopMax();
-    ASSERT_EQUAL(item.first, "yellow");
-    ASSERT_EQUAL(item.second, 2);
-  }
-  {
-    const auto item = strings.PopMax();
-    ASSERT_EQUAL(item.first, "white");
-    ASSERT_EQUAL(item.second, 0);
-  }
+void TestNoCopy() {
+    PriorityCollection<StringNonCopyable> strings;
+    const auto white_id = strings.Add("white");
+    const auto yellow_id = strings.Add("yellow");
+    const auto red_id = strings.Add("red");
+    strings.Promote(yellow_id);
+    for (int i = 0; i < 2; ++i) {
+        strings.Promote(red_id);
+    }
+    strings.Promote(yellow_id);
+    {
+        const auto item = strings.PopMax();
+        
+        ASSERT_EQUAL(item.first, "red");
+        ASSERT_EQUAL(item.second, 2);
+    }
+    {
+        const auto item = strings.PopMax();
+        ASSERT_EQUAL(item.first, "yellow");
+        ASSERT_EQUAL(item.second, 2);
+    }
+    {
+        const auto item = strings.PopMax();
+        ASSERT_EQUAL(item.first, "white");
+        ASSERT_EQUAL(item.second, 0);
+    }
 }
 
 int main() {
@@ -159,3 +157,9 @@ int main() {
   RUN_TEST(tr, TestNoCopy);
   return 0;
 }
+
+
+
+
+
+
