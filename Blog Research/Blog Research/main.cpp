@@ -11,6 +11,9 @@
 
 #include <map>
 #include <string>
+#include <functional>
+#include <future>
+#include <utility>
 using namespace std;
 
 struct Stats {
@@ -18,7 +21,7 @@ struct Stats {
 
     void operator += (const Stats& other) {
         for (const auto& item : other.word_frequences) {
-            word_frequences[item.first] = item.second;
+            word_frequences[item.first] += item.second;
         }
     }
 };
@@ -50,9 +53,9 @@ Stats ExploreKeyWordsSingleThread(
   return result;
 }
 
-//Stats ExploreKeyWords(const set<string>& key_words, istream& input) {
-//  // Р РµР°Р»РёР·СѓР№С‚Рµ СЌС‚Сѓ С„СѓРЅРєС†РёСЋ
-//}
+Stats ExploreKeyWords(const set<string>& key_words, istream& input) {
+    return async(ExploreKeyWordsSingleThread, ref(key_words), ref(input)).get();
+}
 
 void TestBasic() {
   const set<string> key_words = {"yangle", "rocks", "sucks", "all"};
@@ -74,14 +77,14 @@ void TestBasic() {
 }
 
 int main() {
-//  TestRunner tr;
-//  RUN_TEST(tr, TestBasic);
+  TestRunner tr;
+  RUN_TEST(tr, TestBasic);
     
     
-    Stats st;
-    set<string> words = {"privet", "poka", "opa"};
-    string str = "ehal opa jepa ooooooora poka, poka poka privet";
-    st += ExploreLine(words, str);
+//    Stats st;
+//    set<string> words = {"privet", "poka", "opa"};
+//    string str = "ehal opa jepa ooooooora poka, poka poka privet";
+//    st += ExploreLine(words, str);
     return 0;
 }
 
