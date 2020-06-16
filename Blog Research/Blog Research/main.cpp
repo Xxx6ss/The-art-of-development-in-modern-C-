@@ -16,6 +16,8 @@
 #include <utility>
 using namespace std;
 
+#define TREADS = 8;
+
 struct Stats {
   map<string, int> word_frequences;
 
@@ -29,7 +31,7 @@ struct Stats {
 Stats ExploreLine(const set<string>& key_words, const string& line) {
     Stats result;
     size_t pos = 0;
-    for (auto word : key_words) {
+    for (auto& word : key_words) {
         while (line.find(word, pos) != line.npos) {
             pos = line.find(word, pos);
             if (pos != line.npos && (pos  + word.size() == line.size() ||
@@ -43,18 +45,54 @@ Stats ExploreLine(const set<string>& key_words, const string& line) {
     return result;
 }
 
-Stats ExploreKeyWordsSingleThread(
-  const set<string>& key_words, istream& input
-) {
+//Stats ExploreKeyWordsSingleThread(
+//  const set<string>& key_words, istream& input
+//) {
+//  Stats result;
+//  for (string line; getline(input, line); ) {
+//    result += ExploreLine(key_words, line);
+//  }
+//  return result;
+//}
+
+
+using vec_iter = vector<string>::iterator;
+
+Stats ExploreKeyWordsSingleThread(const set<string>& key_words,
+                                  vec_iter begin, vec_iter end) {
   Stats result;
-  for (string line; getline(input, line); ) {
-    result += ExploreLine(key_words, line);
+  while(begin != end) {
+    result += ExploreLine(key_words, *begin);
+      ++begin;
   }
   return result;
 }
 
 Stats ExploreKeyWords(const set<string>& key_words, istream& input) {
-    return async(ExploreKeyWordsSingleThread, ref(key_words), ref(input)).get();
+    
+    vector<future<Stats>> futures;
+    string str;
+    vector<string> strings;
+    
+    while(getline(input, str)) {
+        strings.push_back(move(str));
+    }
+    
+    vector<string>::iterator iter = strings.begin();
+    size_t step = strings.size() / 10 + strings.size() % 10;
+    
+    while(iter  + step < strings.end()) {
+        futures.push_back(async(ExploreKeyWordsSingleThread, ref(key_words), iter, iter + step));
+        advance(iter, step);
+    }
+    futures.push_back(async(ExploreKeyWordsSingleThread, ref(key_words), iter, strings.end()));
+//    cout << futures.size() << endl;
+    Stats result;
+    for (auto& item : futures) {
+        result += item.get();
+    }
+    
+    return result;
 }
 
 void TestBasic() {
@@ -67,7 +105,7 @@ void TestBasic() {
   ss << "yangle rocks others suck\n";
   ss << "Goondex really sucks, but yangle rocks. Use yangle\n";
 
-  const auto stats = ExploreKeyWordsSingleThread(key_words, ss);
+  const auto stats = ExploreKeyWords(key_words, ss);
   const map<string, int> expected = {
     {"yangle", 6},
     {"rocks", 2},
