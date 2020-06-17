@@ -13,6 +13,7 @@
 #include <string>
 #include <functional>
 #include <future>
+#include <string_view>
 #include <utility>
 using namespace std;
 
@@ -30,17 +31,23 @@ struct Stats {
 
 Stats ExploreLine(const set<string>& key_words, const string& line) {
     Stats result;
-    size_t pos = 0;
-    for (auto& word : key_words) {
-        while (line.find(word, pos) != line.npos) {
-            pos = line.find(word, pos);
-            if (pos != line.npos && (pos  + word.size() == line.size() ||
-                                     line.at(pos + word.size()) == ' ' )) {
-                ++result.word_frequences[word];
-            }
-            pos += word.size();
+    string_view str = line;
+    string word;
+    while(true) {
+        size_t space = str.find_first_of(' ');
+        if (space == str.npos)
+            word = string(str.begin(), str.end());
+        else
+            word = string(str.begin(), space);
+        if (key_words.count(word))
+            ++result.word_frequences[word];
+        if (space == str.npos){
+            break;
+            
+        } else {
+            str.remove_prefix(space + 1);
+            
         }
-        pos = 0;
     }
     return result;
 }
@@ -117,12 +124,7 @@ void TestBasic() {
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestBasic);
-    
-    
-//    Stats st;
-//    set<string> words = {"privet", "poka", "opa"};
-//    string str = "ehal opa jepa ooooooora poka, poka poka privet";
-//    st += ExploreLine(words, str);
+
     return 0;
 }
 
