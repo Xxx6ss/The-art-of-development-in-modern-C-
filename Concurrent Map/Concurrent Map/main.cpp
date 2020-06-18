@@ -24,31 +24,35 @@ public:
 
   struct Access {
     V& ref_to_value;
-    lock_guard<mutex> mx;
+    lock_guard<mutex> g;
+      
+      Access(V& val, mutex& m)
+          :g(lock_guard(m))
+          ,ref_to_value(val)
+      { }
   };
 
-    explicit ConcurrentMap(size_t bucket_count) : maps(bucket_count){
+    explicit ConcurrentMap(size_t bucket_count) : maps(bucket_count), mtxes(bucket_count){
     }
 
     Access operator[](const K& key) {
-        for (map<K, V> item : maps) {
-            if (item.count(key))
-                return {item[key], lock_guard(mtx)};
-        }
-        (*maps.begin())[key] = V();
-        return {(*maps.begin())[key], lock_guard(mtx)};
+        size_t index = key % maps.size();
+        lock_guard<mutex> g(m_get_);
+        return {maps[index][key], mtxes[index]};
     }
 
     map<K, V> BuildOrdinaryMap() {
-        lock_guard<mutex> gurard(mtx);
         map<K, V> new_map;
+        int index = 0;
         for (map<K, V> item : maps) {
+            lock_guard<mutex> g(mtxes[index++]);
             new_map.insert(item.begin(), item.end());
         }
         return new_map;
     }
 private:
-    mutex mtx;
+    mutex m_get_;
+    vector <mutex> mtxes;
     vector<map<K, V>> maps;
 };
 
