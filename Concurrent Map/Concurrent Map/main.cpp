@@ -23,37 +23,41 @@ public:
   static_assert(is_integral_v<K>, "ConcurrentMap supports only integer keys");
 
   struct Access {
-    V& ref_to_value;
     lock_guard<mutex> g;
+    V& ref_to_value;
       
-      Access(V& val, mutex& m)
-          :g(lock_guard(m))
-          ,ref_to_value(val)
-      { }
+      
+      Access(const K& key, pair<mutex, map<K, V>>& data)
+                       : g(data.first)
+      , ref_to_value(data.second[key])
+                   {
+                   }
+//      Access(mutex& m, V val)
+//                       : g(m) , ref_to_value(val)
+//                   {
+//                   }
   };
 
-    explicit ConcurrentMap(size_t bucket_count) : maps(bucket_count), mtxes(bucket_count){
+    explicit ConcurrentMap(size_t bucket_count) : maps(bucket_count){
     }
 
     Access operator[](const K& key) {
         size_t index = key % maps.size();
-        lock_guard<mutex> g(m_get_);
-        return {maps[index][key], mtxes[index]};
+//        return {maps[index].first, maps[index].second[key]};
+        return {key, maps[index]};
     }
 
     map<K, V> BuildOrdinaryMap() {
         map<K, V> new_map;
-        int index = 0;
-        for (map<K, V> item : maps) {
-            lock_guard<mutex> g(mtxes[index++]);
-            new_map.insert(item.begin(), item.end());
+        for (auto& item : maps) {
+            lock_guard<mutex> g(item.first);
+            new_map.insert(item.second.begin(), item.second.end());
         }
         return new_map;
     }
+    
 private:
-    mutex m_get_;
-    vector <mutex> mtxes;
-    vector<map<K, V>> maps;
+    vector<pair<mutex, map<K, V>>> maps;
 };
 
 void RunConcurrentUpdates(
