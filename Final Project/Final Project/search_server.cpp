@@ -36,37 +36,42 @@ void SearchServer::UpdateDocumentBase(istream& document_input) {
 }
 
 
+//0 1
+//
+//0 1
+//docid: 0, hitcount: 1
+//0 1
+//1 1
+//
+//0 1
+//1 1
+//docid: 0, hitcount: 1
+//docid: 1, hitcount: 1
+
 
 void SearchServer::AddQueriesStream(
   istream& query_input, ostream& search_results_output
 ) {
     
-    vector<pair<size_t, size_t>> v;
-    vector<size_t> indexes;
-    v.reserve(50010);
-    v.resize(50010);
-    
+    vector<size_t> v;
+    v.reserve(50'000);
   for (string current_query; getline(query_input, current_query); ) {
     const auto words = SplitIntoWords(current_query);
       v.clear();
-      indexes.clear();
-      vector<pair<size_t, size_t>> search_results;
-      for (int i = 0; i < 50'000; ++i) {
-          search_results.push_back({i, 0});
-      }
-      
+      v.resize(50'000);
     map<size_t, size_t> docid_count;
     for (const auto& word : words) {
-      for (const size_t docid : index.Lookup(word)) {
-          search_results.at(docid).second++;
+        auto con = index.Lookup(word);
+      for (const size_t docid : con) {
+          docid_count[docid]++;
+          v[docid]++;
       }
     }
-
-      
-//      for (auto i : docid_count) {
-//          search_results.push_back({i.first, i.second});
-//      }
-      
+      vector<pair<size_t, size_t>> search_results;
+      for (size_t i = 0; i < v.size(); ++i) {
+          if (v[i] != 0)
+              search_results.push_back({i, v[i]});
+      }
       
     sort(
       begin(search_results),
@@ -85,7 +90,11 @@ void SearchServer::AddQueriesStream(
       search_results_output << " {"
         << "docid: " << docid << ", "
         << "hitcount: " << hitcount << '}';
+        
+//        cout << "docid: " << docid << ", "
+//        << "hitcount: " << hitcount << endl;
     }
+      
     search_results_output << endl;
   }
 }
