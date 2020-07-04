@@ -214,7 +214,6 @@ void TestBasicSearch() {
 
 int main() {
 
-    
     TestRunner tr;
     RUN_TEST(tr, TestSerpFormat);
     RUN_TEST(tr, TestTop5);

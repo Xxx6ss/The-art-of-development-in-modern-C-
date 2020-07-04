@@ -19,7 +19,29 @@
 #include <map>
 #include <queue>
 #include <string>
+#include <future>
 using namespace std;
+
+
+
+
+template <typename T>
+class Synchronized {
+public:
+    explicit Synchronized(T initial = T()) : value(move(initial)) {}
+
+    struct Access {
+        T& ref_to_value;
+        lock_guard<mutex> guard;
+    };
+
+    Access GetAccess() {
+        return { value, lock_guard(m) };
+    }
+private:
+    mutex m;
+    T value;
+};
 
 class InvertedIndex {
 public:
@@ -32,7 +54,7 @@ public:
   void Add(istream& documents);
   vector<InvertedIndex::DocRating> Lookup(string& word) const;
 
-  const deque<string>& GetDocument() const {
+  auto GetDocument() const {
     return docs;
   }
 
@@ -46,9 +68,14 @@ class SearchServer {
 public:
   SearchServer() = default;
   explicit SearchServer(istream& document_input);
-  void UpdateDocumentBase(istream& document_input);
-  void AddQueriesStream(istream& query_input, ostream& search_results_output);
+//  void UpdateDocumentBaseAsync(istream& document_input);
+ void AddQueriesStream(istream& query_input, ostream& search_results_output);
+//    void AddQueriesStreamAsync(istream& query_input, ostream& search_results_output,
+//                               Synchronized<InvertedIndex>& ind);
+    
+    void UpdateDocumentBase(istream& document_input);
 
 private:
-  InvertedIndex index;
+  Synchronized<InvertedIndex> index;
+    vector<future<void>> futures;
 };

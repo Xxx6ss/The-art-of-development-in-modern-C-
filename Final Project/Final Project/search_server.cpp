@@ -17,6 +17,9 @@
 
 
 
+
+
+
 vector<string> SplitIntoWords(const string& line) {
   istringstream words_input(line);
   return {istream_iterator<string>(words_input), istream_iterator<string>()};
@@ -26,21 +29,29 @@ SearchServer::SearchServer(istream& document_input) {
   UpdateDocumentBase(document_input);
 }
 
-void SearchServer::UpdateDocumentBase(istream& document_input) {
-  InvertedIndex new_index;
 
+
+void UpdateDocumentBaseAsync (istream& document_input, Synchronized<InvertedIndex>& index) {
+    InvertedIndex new_index;
     new_index.Add(document_input);
+    swap(index.GetAccess().ref_to_value, new_index);
+}
 
-    index = new_index;
+
+void SearchServer::UpdateDocumentBase(istream& document_input) {
+    futures.push_back(async(UpdateDocumentBaseAsync, ref(document_input), ref(index)));
 }
 
 
 
-void SearchServer::AddQueriesStream(
-  istream& query_input, ostream& search_results_output
+
+
+
+void AddQueriesStreamAsync(
+  istream& query_input, ostream& search_results_output, Synchronized<InvertedIndex>& ind
 ) {
-    
-    auto& documents = index.GetDocument();
+    auto un_sync_index = ind.GetAccess().ref_to_value;
+    auto documents = un_sync_index.GetDocument();
     vector<size_t> v(documents.size());
     vector<size_t> docid_count(documents.size());
   for (string current_query; getline(query_input, current_query); ) {
@@ -49,7 +60,7 @@ void SearchServer::AddQueriesStream(
     docid_count.assign(docid_count.size(), 0);
       
     for (string& word : words) {
-        auto con = index.Lookup(word);
+        auto con = un_sync_index.Lookup(word);
         for (const auto& [docid, rating] : con) {
           docid_count[docid] += rating;
       }
@@ -85,7 +96,12 @@ void SearchServer::AddQueriesStream(
   }
 }
 
-
+void SearchServer::AddQueriesStream(
+    istream& query_input, ostream& search_results_output
+) {
+    futures.push_back(async(AddQueriesStreamAsync, ref(query_input),
+            ref(search_results_output), ref(index)));
+}
 
 
 void InvertedIndex::Add(istream& documents) {
