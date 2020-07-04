@@ -17,21 +17,29 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <queue>
 #include <string>
 using namespace std;
 
 class InvertedIndex {
 public:
-  void Add(const string& document);
-  list<size_t> Lookup(const string& word) const;
+    struct DocRating {
+           size_t doc_id_;
+           size_t rating_;
+       };
+    
+    InvertedIndex() = default;
+  void Add(istream& documents);
+  vector<InvertedIndex::DocRating> Lookup(string& word) const;
 
-  const string& GetDocument(size_t id) const {
-    return docs[id];
+  const deque<string>& GetDocument() const {
+    return docs;
   }
 
 private:
-  map<string, list<size_t>> index;
-  vector<string> docs;
+    
+  map<string, vector<DocRating>> index;
+  deque<string> docs;
 };
 
 class SearchServer {

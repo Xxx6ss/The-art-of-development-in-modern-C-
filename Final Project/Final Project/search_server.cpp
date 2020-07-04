@@ -6,13 +6,14 @@
 //  Copyright © 2020 Andrew Kireev. All rights reserved.
 //
 
-#include "search_server.hpp"
+#include "search_server.h"
 #include "iterator_range.h"
 
 #include <algorithm>
 #include <iterator>
 #include <sstream>
 #include <iostream>
+#include <numeric>
 
 
 
@@ -28,71 +29,56 @@ SearchServer::SearchServer(istream& document_input) {
 void SearchServer::UpdateDocumentBase(istream& document_input) {
   InvertedIndex new_index;
 
-  for (string current_document; getline(document_input, current_document); ) {
-    new_index.Add(move(current_document));
-  }
+    new_index.Add(document_input);
 
-  index = move(new_index);
+    index = new_index;
 }
 
-
-//0 1
-//
-//0 1
-//docid: 0, hitcount: 1
-//0 1
-//1 1
-//
-//0 1
-//1 1
-//docid: 0, hitcount: 1
-//docid: 1, hitcount: 1
 
 
 void SearchServer::AddQueriesStream(
   istream& query_input, ostream& search_results_output
 ) {
     
-    vector<size_t> v;
-    v.reserve(50'000);
+    auto& documents = index.GetDocument();
+    vector<size_t> v(documents.size());
+    vector<size_t> docid_count(documents.size());
   for (string current_query; getline(query_input, current_query); ) {
-    const auto words = SplitIntoWords(current_query);
-      v.clear();
-      v.resize(50'000);
-    map<size_t, size_t> docid_count;
-    for (const auto& word : words) {
+    auto words = SplitIntoWords(current_query);
+
+    docid_count.assign(docid_count.size(), 0);
+      
+    for (string& word : words) {
         auto con = index.Lookup(word);
-      for (const size_t docid : con) {
-          docid_count[docid]++;
-          v[docid]++;
+        for (const auto& [docid, rating] : con) {
+          docid_count[docid] += rating;
       }
     }
-      vector<pair<size_t, size_t>> search_results;
-      for (size_t i = 0; i < v.size(); ++i) {
-          if (v[i] != 0)
-              search_results.push_back({i, v[i]});
-      }
       
-    sort(
-      begin(search_results),
-      end(search_results),
-      [](pair<size_t, size_t> lhs, pair<size_t, size_t> rhs) {
-        int64_t lhs_docid = lhs.first;
-        auto lhs_hit_count = lhs.second;
-        int64_t rhs_docid = rhs.first;
-        auto rhs_hit_count = rhs.second;
-        return make_pair(lhs_hit_count, -lhs_docid) > make_pair(rhs_hit_count, -rhs_docid);
+      iota(v.begin(), v.end(), 0);
+      
+    partial_sort(
+      begin(v),
+         Head(v, 5).end(),
+         end(v),
+      [&docid_count](int64_t lhs, int64_t rhs) {
+          return make_pair(docid_count[lhs], -lhs) > make_pair(docid_count[rhs], -rhs);
       }
-    );
+      );
 
     search_results_output << current_query << ':';
-    for (auto [docid, hitcount] : Head(search_results, 5)) {
+    for (size_t docid : Head(v, 5)) {
+        
+        size_t hitcount = docid_count[docid];
+        
+        if (hitcount == 0) {
+            break;
+        }
+        
       search_results_output << " {"
         << "docid: " << docid << ", "
         << "hitcount: " << hitcount << '}';
         
-//        cout << "docid: " << docid << ", "
-//        << "hitcount: " << hitcount << endl;
     }
       
     search_results_output << endl;
@@ -102,21 +88,31 @@ void SearchServer::AddQueriesStream(
 
 
 
-
-
-void InvertedIndex::Add(const string& document) {
+void InvertedIndex::Add(istream& documents) {
+    for(string document; getline(documents, document); ){
+    
   docs.push_back(document);
 
   const size_t docid = docs.size() - 1;
-  for (const auto& word : SplitIntoWords(document)) {
-    index[word].push_back(docid);
+        auto con = SplitIntoWords(document);
+  for (auto word : con) {
+      
+      auto& docids = index[word];
+      
+      if (!docids.empty() && docids.back().doc_id_==docid ) {
+          docids.back().rating_++;
+      } else {
+          docids.push_back({docid, 1});
+      }
   }
+    }
 }
 
-list<size_t> InvertedIndex::Lookup(const string& word) const {
+vector<InvertedIndex::DocRating> InvertedIndex::Lookup(string& word) const {
   if (auto it = index.find(word); it != index.end()) {
     return it->second;
   } else {
     return {};
   }
 }
+

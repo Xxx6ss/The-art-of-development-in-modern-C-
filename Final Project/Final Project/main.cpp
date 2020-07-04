@@ -6,7 +6,7 @@
 //  Copyright © 2020 Andrew Kireev. All rights reserved.
 //
 
-#include "search_server.hpp"
+#include "search_server.h"
 #include "parse.hpp"
 #include "test_runner.h"
 
