@@ -51,12 +51,17 @@ public:
        };
     
     InvertedIndex() = default;
+    explicit InvertedIndex(istream& document_input);
   void Add(istream& documents);
-  vector<InvertedIndex::DocRating> Lookup(string& word) const;
+  vector<InvertedIndex::DocRating> Lookup( string& word) const;
 
-  auto GetDocument() const {
+  auto& GetDocument() const {
     return docs;
   }
+    
+    const size_t docs_size() const {
+          return docs.size();
+      }
 
 private:
     
@@ -67,8 +72,11 @@ private:
 class SearchServer {
 public:
   SearchServer() = default;
-  explicit SearchServer(istream& document_input);
+//    explicit SearchServer(istream& document_input)
+//      : index(InvertedIndex(document_input)){ }
 //  void UpdateDocumentBaseAsync(istream& document_input);
+    
+    SearchServer(istream& document_input);
  void AddQueriesStream(istream& query_input, ostream& search_results_output);
 //    void AddQueriesStreamAsync(istream& query_input, ostream& search_results_output,
 //                               Synchronized<InvertedIndex>& ind);

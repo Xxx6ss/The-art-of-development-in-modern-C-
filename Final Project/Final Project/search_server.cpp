@@ -32,8 +32,7 @@ SearchServer::SearchServer(istream& document_input) {
 
 
 void UpdateDocumentBaseAsync (istream& document_input, Synchronized<InvertedIndex>& index) {
-    InvertedIndex new_index;
-    new_index.Add(document_input);
+    InvertedIndex new_index(document_input);
     swap(index.GetAccess().ref_to_value, new_index);
 }
 
@@ -45,26 +44,34 @@ void SearchServer::UpdateDocumentBase(istream& document_input) {
 
 
 
-
-
 void AddQueriesStreamAsync(
   istream& query_input, ostream& search_results_output, Synchronized<InvertedIndex>& ind
 ) {
-    auto un_sync_index = ind.GetAccess().ref_to_value;
-    auto documents = un_sync_index.GetDocument();
-    vector<size_t> v(documents.size());
-    vector<size_t> docid_count(documents.size());
+
+    vector<size_t> v;
+    vector<size_t> docid_count;
+    
+    
   for (string current_query; getline(query_input, current_query); ) {
     auto words = SplitIntoWords(current_query);
 
-    docid_count.assign(docid_count.size(), 0);
+    
+      auto access = ind.GetAccess();
+      const size_t doc_count = access.ref_to_value.GetDocument().size();
       
-    for (string& word : words) {
-        auto con = un_sync_index.Lookup(word);
-        for (const auto& [docid, rating] : con) {
-          docid_count[docid] += rating;
-      }
-    }
+        docid_count.assign(doc_count, 0);
+        v.resize(doc_count);
+
+        docid_count.assign(docid_count.size(), 0);
+
+        auto& un_sync_index =  access.ref_to_value;
+        for (string& word : words) {
+            auto con = un_sync_index.Lookup(word);
+            for (const auto& [docid, rating] : con) {
+                docid_count[docid] += rating;
+            }
+        }
+    
       
       iota(v.begin(), v.end(), 0);
       
@@ -123,6 +130,28 @@ void InvertedIndex::Add(istream& documents) {
   }
     }
 }
+
+InvertedIndex::InvertedIndex(istream& documents) {
+    for(string document; getline(documents, document); ){
+    
+  docs.push_back(document);
+
+  const size_t docid = docs.size() - 1;
+        auto con = SplitIntoWords(document);
+  for (auto word : con) {
+      
+      auto& docids = index[word];
+      
+      if (!docids.empty() && docids.back().doc_id_==docid ) {
+          docids.back().rating_++;
+      } else {
+          docids.push_back({docid, 1});
+      }
+  }
+    }
+}
+
+
 
 vector<InvertedIndex::DocRating> InvertedIndex::Lookup(string& word) const {
   if (auto it = index.find(word); it != index.end()) {
