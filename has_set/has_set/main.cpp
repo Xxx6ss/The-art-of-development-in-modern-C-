@@ -11,6 +11,7 @@
 #include <forward_list>
 #include <iterator>
 #include <deque>
+#include <algorithm>
 
 using namespace std;
 
@@ -33,34 +34,33 @@ public:
 explicit HashSet(
     size_t num_buckets,
     const Hasher& hasher = {}
-                 ) : hash(hasher){
+                 ) : hash(hasher), num_bucket_(num_buckets){
     buckets_.resize(num_buckets);
 }
 
     void Add(const Type& value) {
-        if (Has(value))
-            buckets_[hash.operator()(value)].push_front(value);
+        if (!Has(value))
+            buckets_[hash(value) % num_bucket_].push_front(value);
     }
     bool Has(const Type& value) const {
-        auto number_bucket = hash.operator()(value);
-              if (*find(begin(buckets_[number_bucket]), end(buckets_[number_bucket]), value) == value)
-                  return true;
-              return false;
+        const BucketList& el = GetBucket(value);
+        auto it = find(el.begin(), el.end(), value);
+        if (it != el.end())
+            return true;
+        return false;
     }
     void Erase(const Type& value) {
-        auto number_bucket = hash.operator()(value);
-        if (Has(value)) {
-            const auto it = prev(find(begin(buckets_[number_bucket]), end(buckets_[number_bucket]), value));
-            buckets_[hash.operator()(value)].erase_after(it);
-        }
+            buckets_[hash(value) % num_bucket_].remove(value);
+        
     }
     const BucketList& GetBucket(const Type& value) const {
-        return buckets_[hash.operator()(value)];
+        return buckets_[hash(value) % num_bucket_];
     }
     
 private:
     vector<BucketList> buckets_;
     Hasher hash;
+    size_t num_bucket_;
 };
 
 
@@ -145,3 +145,4 @@ int main() {
   RUN_TEST(tr, TestEquivalence);
   return 0;
 }
+
