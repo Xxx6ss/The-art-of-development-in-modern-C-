@@ -22,16 +22,28 @@ struct Record {
   int timestamp;
   int karma;
     
+    struct Iterators {
+        std::multimap<int, Record*>::iterator time_iterator;
+        std::multimap<int, Record*>::iterator karma_iterator;
+        std::multimap<string, Record*>::iterator user_iterator;
+    } iterators;
+    
 };
 
-// Р РµР°Р»РёР·СѓР№С‚Рµ СЌС‚РѕС‚ РєР»Р°СЃСЃ
+
+
 class Database {
 public:
     bool Put(const Record& record) {
         auto [it, result] = record_by_id_.try_emplace(record.id, record);
         
         if (result) {
-            
+            auto addr = std::addressof(it->second);
+            it->second.iterators = {
+                range_by_time_.emplace(record.timestamp, addr),
+                range_by_karma_.emplace(record.karma, addr),
+                range_by_user_.emplace(record.user, addr)
+            };
             
             return true;
         }
@@ -42,21 +54,51 @@ public:
             return nullptr;
         return std::addressof(record_by_id_.at(id));
     }
-  bool Erase(const string& id);
+    bool Erase(const string& id) {
+        auto it = record_by_id_.find(id);
+        
+        if (it == record_by_id_.end())
+            return false;
+        
+        range_by_time_.erase(it->second.iterators.time_iterator);
+        range_by_karma_.erase(it->second.iterators.karma_iterator);
+        range_by_user_.erase(it->second.iterators.user_iterator);
+        record_by_id_.erase(it);
+        return true;
+    }
+    
+    
+    template <typename Key, typename Callback>
+    void Range(const multimap<Key, Record*>& con, const Key& low, const Key& high,
+               Callback callback) const {
+        if (low > high)
+            return;
+        
+        auto l = con.lower_bound(low);
+        auto h = con.upper_bound(high);
+        for (auto it = l; it != h && callback(*it->second); ++it);
+    }
+    
 
   template <typename Callback>
-  void RangeByTimestamp(int low, int high, Callback callback) const;
+    void RangeByTimestamp(int low, int high, Callback callback) const {
+        Range(range_by_time_, low, high, callback);
+    }
 
   template <typename Callback>
-  void RangeByKarma(int low, int high, Callback callback) const;
+    void RangeByKarma(int low, int high, Callback callback) const {
+        Range(range_by_karma_, low, high, callback);
+    }
 
   template <typename Callback>
-  void AllByUser(const string& user, Callback callback) const;
+    void AllByUser(const string& user, Callback callback) const {
+        Range(range_by_user_, user, user, callback);
+    }
 private:
     std::unordered_map<string, Record> record_by_id_;
-    std::multimap<int, Record*> ragne_by_time_;
-    std::multimap<int, Record*> ragne_by_karma_;
-    std::multimap<string, Record*> ragne_by_user_;
+    std::multimap<int, Record*> range_by_time_;
+    std::multimap<int, Record*> range_by_karma_;
+    std::multimap<string, Record*> range_by_user_;
     
 };
 
