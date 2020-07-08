@@ -54,26 +54,16 @@ private:
 
 
 Node* Next(Node* me) {
-    Node* cur_node;
-    if (me->left == nullptr && me->right == nullptr && me->parent == nullptr)
+    if (me->right == nullptr && me->left == nullptr && me->parent == nullptr)
         return nullptr;
-    if (me->parent == nullptr) {
+    if (me->right != nullptr) {
         me = me->right;
         while(me->left != nullptr)
             me = me->left;
         return me;
-    } else if (me->parent->left == me) {
-        if (me->right == nullptr)
-            return me->parent;
-        else {
-            int value = me->value;
-            me = me->right;
-            while (me->left != nullptr) {
-                me = me->left;
-            }
-            return me;
-        }
-    } else if (me->parent->right == me && me->right == nullptr) {
+    } else if (me->right == nullptr && me->parent->left == me)
+        return me->parent;
+    else if (me->right == nullptr && me->parent->right == me){
         int value = me->value;
         while (true) {
             if (me->parent == nullptr)
@@ -83,10 +73,9 @@ Node* Next(Node* me) {
                 continue;
             else
                 return me;
-        }
-    } else if (me->right != nullptr)
-        return me->right;
-    return me;
+    }
+    }
+    return nullptr;
 }
 
 
@@ -112,10 +101,10 @@ void Test1() {
   nb.CreateLeftSon(l, 89);
   r = nb.CreateRightSon(l, 91);
 
-//  ASSERT_EQUAL( Next(l)->value, 91);
-//  ASSERT_EQUAL( Next(root)->value, 89 );
-//  ASSERT_EQUAL( Next(min)->value, 2 );
-//  ASSERT_EQUAL( Next(r)->value, 100);
+  ASSERT_EQUAL( Next(l)->value, 91);
+  ASSERT_EQUAL( Next(root)->value, 89 );
+  ASSERT_EQUAL( Next(min)->value, 2 );
+  ASSERT_EQUAL( Next(r)->value, 100);
 
   while (min) {
     cout << min->value << '\n';
