@@ -2,20 +2,12 @@
 // Created by Andrew Kireev on 09.08.2020.
 //
 
-#ifndef PARSING_XML_TEST_RUNNER_H
-#define PARSING_XML_TEST_RUNNER_H
-
-//
-//  test_runner.h
-//  Макрос UPDATE_FIELD
-//
-//  Created by Andrew Kireev on 15/07/2019.
-//  Copyright © 2019 Andrew Kireev. All rights reserved.
-//
+#ifndef TEST_TEST_RUNNER_H
+#define TEST_TEST_RUNNER_H
 
 #pragma once
 
-#include <sstream>
+
 #include <stdexcept>
 #include <iostream>
 #include <map>
@@ -24,6 +16,15 @@
 #include <vector>
 
 using namespace std;
+
+template <class T>
+bool operator == (const vector<T>& v1, const vector<T> v2) {
+    if (v1.size() != v2.size()) return false;
+    for (size_t i = 0; i < v1.size(); ++i) {
+        if (v1[i] != v2[i]) return false;
+    }
+    return true;
+}
 
 template <class T>
 ostream& operator << (ostream& os, const vector<T>& s) {
@@ -52,6 +53,7 @@ ostream& operator << (ostream& os, const set<T>& s) {
     }
     return os << "}";
 }
+
 template <class K, class V>
 ostream& operator << (ostream& os, const map<K, V>& m) {
     os << "{";
@@ -110,10 +112,10 @@ private:
 };
 
 #define ASSERT_EQUAL(x, y) {            \
-ostringstream os;                     \
-os << #x << " != " << #y << ", "      \
+ostringstream oss;                    \
+oss << #x << " != " << #y << ", "     \
 << __FILE__ << ":" << __LINE__;     \
-AssertEqual(x, y, os.str());          \
+AssertEqual(x, y, oss.str());         \
 }
 
 #define ASSERT(x) {                     \
@@ -127,4 +129,4 @@ Assert(x, os.str());                  \
 tr.RunTest(func, #func)
 
 
-#endif //PARSING_XML_TEST_RUNNER_H
+#endif //TEST_TEST_RUNNER_H

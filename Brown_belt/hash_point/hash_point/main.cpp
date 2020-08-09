@@ -7,6 +7,7 @@
 //
 
 #include "test_runner.h"
+#include <istream>
 #include <limits>
 #include <random>
 #include <unordered_set>
