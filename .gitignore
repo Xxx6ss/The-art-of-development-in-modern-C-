@@ -38,13 +38,20 @@ Translater/Translater.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChe
 *.xcuserstate
 Translater/Translater.xcodeproj/project.xcworkspace/xcuserdata/andrewkireev.xcuserdatad/UserInterfaceState.xcuserstate
 *.xcbkptlist
-*.plist
 Translater/Translater.xcodeproj/xcuserdata/andrewkireev.xcuserdatad/xcschemes/xcschememanagement.plist
-*.plist
 *.xcworkspacedata
 Hotel Booking System/.DS_Store
 Josephus permutation/.DS_Store
 Аssignment operator/.DS_Store
 .DS_Store
-.DS_Store
-.DS_Store
+Brown_belt/Parsing_XML/cmake-build-debug/Makefile
+*.xml
+*.txt
+*.cmake
+*.make
+*.iml
+*.check_cache
+*.log
+*.bin
+Brown_belt/Parsing_Xml/cmake-build-debug/CMakeFiles/3.15.3/CompilerIdC/CMakeCCompilerId.c
+Brown_belt/Parsing_Xml/cmake-build-debug/CMakeFiles/3.15.3/CompilerIdCXX/CMakeCXXCompilerId.cpp
