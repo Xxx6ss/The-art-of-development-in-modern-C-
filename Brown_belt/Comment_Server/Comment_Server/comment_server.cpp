@@ -20,34 +20,9 @@
 using namespace std;
 
 
-enum class HttpCode {
-  Ok = 200,
-  NotFound = 404,
-  Found = 302,
-};
-
-class HttpResponse {
-public:
-  explicit HttpResponse(HttpCode code);
-
-    HttpResponse& AddHeader(string name, string value) {
-        std::string new_header;
-        new_header = name + ": " + value;
-        headers.push_back(new_header);
-        return this;
-    }
-    HttpResponse& SetContent(string a_content) {
-        
-    }
-  HttpResponse& SetCode(HttpCode a_code);
-
-  friend ostream& operator << (ostream& output, const HttpResponse& resp);
-private:
-    std::vector<std::string> headers;
-};
 
 
-////
+
 
 struct HttpRequest {
   string method, path, body;
@@ -79,6 +54,8 @@ pair<size_t, string> ParseIdAndContent(const string& body) {
 struct LastCommentInfo {
   size_t user_id, consecutive_count;
 };
+
+class HttpResponse;
 
 class CommentServer {
 private:
@@ -141,6 +118,7 @@ public:
   }
 };
 
+
 struct HttpHeader {
   string name, value;
 };
@@ -152,6 +130,63 @@ ostream& operator<<(ostream& output, const HttpHeader& h) {
 bool operator==(const HttpHeader& lhs, const HttpHeader& rhs) {
   return lhs.name == rhs.name && lhs.value == rhs.value;
 }
+
+enum class HttpCode {
+  Ok = 200,
+  NotFound = 404,
+  Found = 302,
+};
+
+ostream& operator<<(ostream& output, HttpCode code) {
+    switch (code) {
+        case HttpCode::Ok:
+            output << "200 Ok\n";
+            break;
+        case HttpCode::NotFound:
+            output << "404 Not Found\n";
+        case HttpCode::Found:
+            output << "302 Found\n";
+        default:
+            throw ("Unknown HttpCode\n");
+    }
+    return output;
+}
+
+class HttpResponse {
+public:
+  explicit HttpResponse(HttpCode code);
+
+    HttpResponse& AddHeader(string name, string value) {
+        headers_.push_back({std::move(name), std::move(value)});
+        return *this;
+    }
+    HttpResponse& SetContent(string a_content) {
+        content_ = a_content;
+        return *this;
+    }
+    HttpResponse& SetCode(HttpCode a_code) {
+        code_ = a_code;
+        return *this;
+    }
+
+    friend ostream& operator << (ostream& output, const HttpResponse& resp);
+private:
+    std::vector<HttpHeader> headers_;
+    HttpCode code_;
+    std::string content_;
+};
+
+
+ostream& operator << (ostream& output, const HttpResponse& resp) {
+    output << "HTTP/1.1 ";
+    output << resp.code_;
+    for (const auto& [name, value] : resp.headers_) {
+        output << name << ": " << value << "\n";
+    }
+    output << "\n";
+    return output;
+}
+
 
 struct ParsedResponse {
   int code;
@@ -185,6 +220,8 @@ istream& operator >>(istream& input, ParsedResponse& r) {
   input.read(r.content.data(), r.content.size());
   return input;
 }
+
+
 
 void Test(CommentServer& srv, const HttpRequest& request, const ParsedResponse& expected) {
   stringstream ss;
