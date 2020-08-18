@@ -179,12 +179,14 @@ private:
 
 ostream& operator << (ostream& output, const HttpResponse& resp) {
     output << "HTTP/1.1 ";
-    output << resp.code_;
+    output << resp.code_ << "\n";
     for (const auto& [name, value] : resp.headers_) {
         output << name << ": " << value << "\n";
     }
+    if (!resp.content_.empty())
+        output << "Content-Length: " << resp.content_.size() << "\n";
     output << "\n";
-    return output;
+    return output << "\n" << resp.content_;
 }
 
 
