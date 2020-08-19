@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <numeric>
+#include <unordered_map>
 
 using namespace std;
 
@@ -46,7 +47,54 @@ struct Person {
   bool is_male;
 };
 
-vector<Person> ReadPeople(istream& input) {
+class Data {
+public:
+    Data(vector<Person> persons){
+        sort(begin(persons), end(persons), [](const Person& lhs, const Person& rhs) {
+          return lhs.age < rhs.age;
+        });
+        srt_by_age_ = persons;
+        
+        sort(begin(persons), end(persons), [](const Person& lhs, const Person& rhs) {
+          return lhs.income < rhs.income;
+        });
+        srt_by_income_ = persons;
+        
+        for (auto item : persons) {
+            if (!most_pop_name_.count(item.name))
+                most_pop_name_[item.name] = 1;
+            else
+                most_pop_name_[item.name]++;
+        }
+    }
+    
+    string find_most_popular_name() const {
+        string name = "";
+        int count = 0;
+        
+        for (auto item : most_pop_name_) {
+            if (count < item.second) {
+                count = item.second;
+                name = item.first;
+            }
+        }
+        return name;
+    }
+    long find_age(int age) const {
+        auto adult_begin = lower_bound(
+          begin(srt_by_age_), end(srt_by_age_), age, [](const Person& lhs, long age) {
+            return lhs.age < age;
+          }
+        );
+        return std::distance(adult_begin, end(srt_by_age_));
+    }
+public:
+    vector<Person> srt_by_age_;
+    vector<Person> srt_by_income_;
+    unordered_map<string, int> most_pop_name_;
+};
+
+Data ReadPeople(istream& input) {
   long count;
   input >> count;
 
@@ -62,11 +110,11 @@ vector<Person> ReadPeople(istream& input) {
     sort(begin(result), end(result), [](const Person& lhs, const Person& rhs) {
       return lhs.age < rhs.age;
     });
-  return result;
+  return Data(result);
 }
 
 int main() {
-    const vector<Person> people = ReadPeople(cin);
+    const Data people = ReadPeople(cin);
 
 //  sort(begin(people), end(people), [](const Person& lhs, const Person& rhs) {
 //    return lhs.age < rhs.age;
@@ -77,14 +125,10 @@ int main() {
       long adult_age;
       cin >> adult_age;
 
-      auto adult_begin = lower_bound(
-        begin(people), end(people), adult_age, [](const Person& lhs, long age) {
-          return lhs.age < age;
-        }
-      );
+      
 
-      cout << "There are " << std::distance(adult_begin, end(people))
-           << " adult people for maturity age " << adult_age << '\n';
+        cout << "There are " << people.find_age(adult_age)
+        << " adult people for maturity age " << adult_age << '\n';
     } else if (command == "WEALTHY") {
       long count;
       cin >> count;
