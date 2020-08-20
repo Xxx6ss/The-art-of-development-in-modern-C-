@@ -61,24 +61,45 @@ public:
         srt_by_income_ = persons;
         
         for (auto item : persons) {
-            if (!most_pop_name_.count(item.name))
-                most_pop_name_[item.name] = 1;
-            else
-                most_pop_name_[item.name]++;
+            if (item.is_male) {
+                if (!most_pop_name_M.count(item.name))
+                    most_pop_name_M[item.name] = 1;
+                else
+                    most_pop_name_M[item.name]++;
+            }
+            else {
+                if (!most_pop_name_W.count(item.name))
+                    most_pop_name_W[item.name] = 1;
+                else
+                    most_pop_name_W[item.name]++;
+            }
         }
     }
     
-    string find_most_popular_name() const {
+    string find_most_popular_name_W() const {
         string name = "";
         int count = 0;
         
-        for (auto item : most_pop_name_) {
+        for (auto item : most_pop_name_W) {
             if (count < item.second) {
                 count = item.second;
                 name = item.first;
             }
         }
-        return name;
+        return check_strings(name, most_pop_name_W, count);
+    }
+    
+    string find_most_popular_name_M() const {
+        string name = "";
+        int count = 0;
+        
+        for (auto item : most_pop_name_M) {
+            if (count < item.second) {
+                count = item.second;
+                name = item.first;
+            }
+        }
+        return check_strings(name, most_pop_name_M, count);
     }
     long find_age(int age) const {
         auto adult_begin = lower_bound(
@@ -88,10 +109,39 @@ public:
         );
         return std::distance(adult_begin, end(srt_by_age_));
     }
-public:
+    
+    long find_wealth(int num) const{
+        long amount = 0;
+        auto it = srt_by_income_.end();
+        it = it - num;
+        for (;it != srt_by_income_.end(); ++it)
+            amount += it->income;
+        return amount;
+    }
+    
+    bool is_no_people(char gender) const {
+        if (gender == 'W') {
+            if (most_pop_name_W.begin() == most_pop_name_W.end())
+                return true;
+        } else if (gender == 'M') {
+            if (most_pop_name_M.begin() == most_pop_name_M.end())
+                return true;
+        }
+        return false;
+    }
+private:
     vector<Person> srt_by_age_;
     vector<Person> srt_by_income_;
-    unordered_map<string, int> most_pop_name_;
+    unordered_map<string, int> most_pop_name_M;
+    unordered_map<string, int> most_pop_name_W;
+    
+    string check_strings(string name, unordered_map<string, int> names, int count) const {
+        for (auto it : names) {
+            if (it.second == count && it.first < name)
+                name = it.first;
+        }
+        return name;
+    }
 };
 
 Data ReadPeople(istream& input) {
@@ -102,8 +152,6 @@ Data ReadPeople(istream& input) {
   for (Person& p : result) {
     char gender;
     input >> p.name >> p.age >> p.income >> gender;
-      if (p.income < 0)                     /// Mb need to be removed
-          p.income = 0;
     p.is_male = (gender == 'M');
   }
 
@@ -116,71 +164,33 @@ Data ReadPeople(istream& input) {
 int main() {
     const Data people = ReadPeople(cin);
 
-//  sort(begin(people), end(people), [](const Person& lhs, const Person& rhs) {
-//    return lhs.age < rhs.age;
-//  });
-
   for (string command; cin >> command; ) {
     if (command == "AGE") {
       long adult_age;
       cin >> adult_age;
 
-      
-
-        cout << "There are " << people.find_age(adult_age)
+      cout << "There are " << people.find_age(adult_age)
         << " adult people for maturity age " << adult_age << '\n';
     } else if (command == "WEALTHY") {
       long count;
       cin >> count;
 
-      auto head = Head(people, count);
-
-      partial_sort(
-        head.begin(), head.end(), end(people), [](const Person& lhs, const Person& rhs) {
-          return lhs.income > rhs.income;
-        }
-      );
-
-    
-      long total_income = accumulate(
-        head.begin(), head.end(), 0, [](int& cur, Person& p) {
-          return cur += p.income;
-        }
-      );
-      cout << "Top-" << count << " people have total income " << total_income << '\n';
-    total_income = 0;
+        cout << "Top-" << count << " people have total income " << people.find_wealth(count) << '\n';
     } else if (command == "POPULAR_NAME") {
-      char gender;
-      cin >> gender;
-
-      IteratorRange range{
-        begin(people),
-        partition(begin(people), end(people), [gender](Person& p) {
-          return p.is_male == (gender == 'M');
-        })
-      };
-      if (range.begin() == range.end()) {
-        cout << "No people of gender " << gender << '\n';
-      } else {
-        sort(range.begin(), range.end(), [](const Person& lhs, const Person& rhs) {
-          return lhs.name < rhs.name;
-        });
-        const string* most_popular_name = &range.begin()->name;
-        long count = 1;
-        for (auto i = range.begin(); i != range.end(); ) {
-          auto same_name_end = find_if_not(i, range.end(), [i](const Person& p) {
-            return p.name == i->name;
-          });
-          long cur_name_count = std::distance(i, same_name_end);
-          if (cur_name_count > count) {
-            count = cur_name_count;
-            most_popular_name = &i->name;
-          }
-          i = same_name_end;
+        char gender;
+        cin >> gender;
+        if (people.is_no_people(gender)) {
+            cout << "No people of gender " << gender << '\n';
+            continue;
+        } else {
+            if (gender == 'W') {
+                cout << "Most popular name among people of gender " << gender << " is "
+                << people.find_most_popular_name_W() << '\n';
+            } else if (gender == 'M') {
+                cout << "Most popular name among people of gender " << gender << " is "
+                << people.find_most_popular_name_M() << '\n';
+            }
         }
-        cout << "Most popular name among people of gender " << gender << " is "
-             << *most_popular_name << '\n';
-      }
     }
   }
 }
