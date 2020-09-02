@@ -15,35 +15,35 @@
 #include <stdexcept>
 #include <set>
 #include <algorithm>
+#include <memory>
 
 using namespace std;
 
 template <class T>
 class ObjectPool {
 public:
-    T* Allocate() {
+    shared_ptr<T> Allocate() {
         if (liberated_.size()) {
-            auto it = allocated_.insert(liberated_.front());
+            shared_ptr<T> it = *(allocated_.insert(liberated_.front())).first;
             liberated_.pop();
-            return *(it.first);
+            return it;
         }
         else {
-            T* obj = new T;
-            auto it = allocated_.insert(move(obj));
-            return *(it.first);
+            shared_ptr<T> it = *(allocated_.insert(make_shared<T>(§))).first;
+            return it;
         }
     }
-    T* TryAllocate() {
+    shared_ptr<T> TryAllocate() {
         if (liberated_.size()) {
-            auto it = allocated_.insert(liberated_.front());
+            shared_ptr<T> it = *(allocated_.insert(liberated_.front())).first;
             liberated_.pop();
-            return *(it.first);
+            return it;
         }
         else
             return nullptr;
     }
 
-    void Deallocate(T* object) {
+    void Deallocate(shared_ptr<T> object) {
         if (allocated_.count(object) == 0)
             throw invalid_argument("Element not allocated");
         else {
@@ -52,19 +52,9 @@ public:
         }
     }
 
-    ~ObjectPool() {
-        for (auto it : allocated_) {
-            delete it;
-        }
-        
-        while(!liberated_.empty()) {
-            delete (liberated_.front());
-            liberated_.pop();
-        }
-    }
 
 private:
-    void Destroy_vector(std::vector<T*> &v)
+    void Destroy_vector(std::vector<shared_ptr<T>> &v)
     {
         while(!v.empty()) {
             delete (v.back());
@@ -72,16 +62,16 @@ private:
         }
     }
     
-    set<T*> allocated_;
-    queue<T*> liberated_;
+    set<shared_ptr<T>> allocated_;
+    queue<shared_ptr<T>> liberated_;
 };
 
 void TestObjectPool() {
   ObjectPool<string> pool;
 
-  auto p1 = pool.Allocate();
-  auto p2 = pool.Allocate();
-  auto p3 = pool.Allocate();
+  shared_ptr<string> p1 = pool.Allocate();
+  shared_ptr<string> p2 = pool.Allocate();
+  shared_ptr<string> p3 = pool.Allocate();
 
   *p1 = "first";
   *p2 = "second";
