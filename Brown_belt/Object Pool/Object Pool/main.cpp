@@ -23,40 +23,44 @@ class ObjectPool {
 public:
     T* Allocate() {
         if (liberated_.size()) {
-            allocated_.push_back(liberated_.front());
-            liberated_.erase(liberated_.begin());
-            return (allocated_.back());
+            auto it = allocated_.insert(liberated_.front());
+            liberated_.pop();
+            return *(it.first);
         }
         else {
             T* obj = new T;
-            allocated_.push_back(obj);
-            return (allocated_.back());
+            auto it = allocated_.insert(move(obj));
+            return *(it.first);
         }
     }
     T* TryAllocate() {
         if (liberated_.size()) {
-            allocated_.push_back(liberated_.front());
-            liberated_.erase(liberated_.begin());
-            return (allocated_.back());
+            auto it = allocated_.insert(liberated_.front());
+            liberated_.pop();
+            return *(it.first);
         }
         else
             return nullptr;
     }
 
     void Deallocate(T* object) {
-        if (std::count(allocated_.begin(), allocated_.end(), object) == 0)
+        if (allocated_.count(object) == 0)
             throw invalid_argument("Element not allocated");
         else {
-            liberated_.push_back(*std::find(allocated_.begin(),
-                                                 allocated_.end(), object));
-            allocated_.erase(std::find(allocated_.begin(),
-                                        allocated_.end(), object));
+            liberated_.push(object);
+            allocated_.erase(object);
         }
     }
 
     ~ObjectPool() {
-        Destroy_vector(allocated_);
-        Destroy_vector(liberated_);
+        for (auto it : allocated_) {
+            delete it;
+        }
+        
+        while(!liberated_.empty()) {
+            delete (liberated_.front());
+            liberated_.pop();
+        }
     }
 
 private:
@@ -68,8 +72,8 @@ private:
         }
     }
     
-    vector<T*> allocated_;
-    vector<T*> liberated_;
+    set<T*> allocated_;
+    queue<T*> liberated_;
 };
 
 void TestObjectPool() {
