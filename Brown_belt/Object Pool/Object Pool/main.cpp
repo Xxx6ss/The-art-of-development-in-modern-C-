@@ -23,30 +23,34 @@ class ObjectPool {
 public:
     T* Allocate() {
         if (liberated_.size()) {
-            allocated_.push_back(move(allocated_.back()));
-            return (*allocated_.end());
+            allocated_.push_back(liberated_.front());
+            liberated_.erase(liberated_.begin());
+            return (allocated_.back());
         }
         else {
             T* obj = new T;
             allocated_.push_back(obj);
-            return (*allocated_.end());
+            return (allocated_.back());
         }
     }
     T* TryAllocate() {
         if (liberated_.size()) {
-            allocated_.push_back(move(allocated_.back()));
-            return &(*allocated_.end());
+            allocated_.push_back(liberated_.front());
+            liberated_.erase(liberated_.begin());
+            return (allocated_.back());
         }
         else
             return nullptr;
     }
 
     void Deallocate(T* object) {
-        if (!std::count(allocated_.begin(), allocated_.end(), object))
-            throw invalid_argument("Element not allocated\n");
+        if (std::count(allocated_.begin(), allocated_.end(), object) == 0)
+            throw invalid_argument("Element not allocated");
         else {
-            liberated_.push_back(move(*std::find(allocated_.begin(),
-                                                 allocated_.end(), object)));
+            liberated_.push_back(*std::find(allocated_.begin(),
+                                                 allocated_.end(), object));
+            allocated_.erase(std::find(allocated_.begin(),
+                                        allocated_.end(), object));
         }
     }
 
@@ -59,7 +63,7 @@ private:
     void Destroy_vector(std::vector<T*> &v)
     {
         while(!v.empty()) {
-            delete v.back();
+            delete (v.back());
             v.pop_back();
         }
     }
