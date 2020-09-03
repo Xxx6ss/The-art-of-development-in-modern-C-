@@ -22,9 +22,9 @@ struct Email {
   string to;
   string body;
     friend std::istream& operator>> (std::istream& in, Email& email) {
-        in >> email.from;
-        in >> email.to;
-        in >> email.body;
+        getline(in, email.from);
+        getline(in, email.to);
+        getline(in, email.body);
         return in;
     }
 };
@@ -43,7 +43,9 @@ protected:
   // реализации должны вызывать PassOn, чтобы передать объект дальше
   // по цепочке обработчиков
     void PassOn(unique_ptr<Email> email) const {
-        next_obj_->Process(std::move(email));
+        if (next_obj_) {
+            next_obj_->Process(std::move(email));
+        }
     }
 
 public:
@@ -59,19 +61,24 @@ class Reader : public Worker {
 public:
     Reader(istream& input) : input_(input) {}
     
-    
-    void Run() {
-        Email email;
-        while (input_ >> email) {
-            Process(make_unique<Email>(email));
+    void Run() override {
+        for (;;) {
+            Email email;
+            input_ >> email;
+            if (input_) {
+                Process(make_unique<Email>(email));
+            } else
+                break;
         }
     }
-    void Process(unique_ptr<Email> email) {
+
+    
+    void Process(unique_ptr<Email> email) override{
            PassOn(std::move(email));
     }
+    
 private:
     istream& input_;
-    vector<Email> emails_;
 };
 
 
@@ -81,7 +88,7 @@ public:
     
     Filter(Function func) : func_(func) {}
     
-    void Process(unique_ptr<Email> email) {
+    void Process(unique_ptr<Email> email) override {
         if (func_(*email.get()))
             PassOn(std::move(email));
     }
@@ -95,13 +102,14 @@ class Copier : public Worker {
 public:
     Copier(string address) : address_(address) { }
     
-    void Process(unique_ptr<Email> email) {
+    void Process(unique_ptr<Email> email) override {
         if (address_ == email->to)
             PassOn(std::move(email));
         else {
+            auto copy = make_unique<Email>(*email);
+            copy->to = address_;
             PassOn(std::move(email));
-            email->to = address_;
-            PassOn(std::move(email));
+            PassOn(std::move(copy));
         }
     }
     
@@ -112,16 +120,16 @@ private:
 
 class Sender : public Worker {
 public:
-    Sender(ostringstream& out) : out_(move(out)) {}
+    Sender(ostream& out) : out_(out) {}
     
-    void Process(unique_ptr<Email> email) {
-        out_ << email->from;
-        out_ << email->to;
-        out_ << email->body;
+    void Process(unique_ptr<Email> email) override {
+        out_ << email->from << endl <<
+        email->to << endl << email->body << endl;
+        PassOn(move(email));
     }
     
 private:
-    ostringstream out_;
+    ostream& out_;
 };
 
 
@@ -131,24 +139,37 @@ class PipelineBuilder {
 public:
   // добавляет в качестве первого обработчика Reader
     explicit PipelineBuilder(istream& in) {
-        ptr_ = make_unique<Worker>();
-        ptr_->input_ = move(in);
+        ptr_.push_back(make_unique<Reader>(in));
     }
 
   // добавляет новый обработчик Filter
-  PipelineBuilder& FilterBy(Filter::Function filter);
+    PipelineBuilder& FilterBy(Filter::Function filter) {
+        ptr_.push_back(make_unique<Filter>(filter));
+        return *this;
+    }
 
   // добавляет новый обработчик Copier
-  PipelineBuilder& CopyTo(string recipient);
+    PipelineBuilder& CopyTo(string recipient) {
+        ptr_.push_back(make_unique<Copier>(recipient));
+        return *this;
+    }
 
 
   // добавляет новый обработчик Sender
-  PipelineBuilder& Send(ostream& out);
+    PipelineBuilder& Send(ostream& out) {
+        ptr_.push_back(make_unique<Sender>(out));
+        return *this;
+    }
 
  // возвращает готовую цепочку обработчиков
-  unique_ptr<Worker> Build();
+    unique_ptr<Worker> Build() {
+        for (size_t i = ptr_.size() - 1; i > 0; --i) {
+            ptr_[i - 1]->SetNext(move(ptr_[i]));
+        }
+        return move(ptr_[0]);
+    }
 private:
-    unique_ptr<Worker> ptr_;
+    vector<unique_ptr<Worker>> ptr_;
 };
 
 
