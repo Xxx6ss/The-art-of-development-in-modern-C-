@@ -14,15 +14,9 @@ using namespace std;
 // Этот файл сдаётся на проверку
 // Здесь напишите реализацию необходимых классов-потомков `IShape`
 
-
 class Figure : public IShape {
 public:
-//    Figure() = default;
-    
-    Figure(Point position, Size size, ShapeType type) : position_(position),
-                                size_(size), type_(type) {}
-    
-    
+     
     Figure(ShapeType type) : type_(type) {}
     
     void SetPosition(Point position) override {
@@ -42,7 +36,7 @@ public:
     }
     
     std::unique_ptr<IShape> Clone() const override {
-        return make_unique<Figure>(Figure(position_, size_, type_));
+        return make_unique<Figure>(*this);
         
     }
     
@@ -76,9 +70,8 @@ private:
     Size size_;
     std::shared_ptr<ITexture> texture_;
     ShapeType type_;
+    
 };
-
-
 
 
 // Напишите реализацию функции
