@@ -62,6 +62,8 @@ public:
           new_book.book_ = unpacker_->UnpackBook(book_name);
           if (max_rang_ < settings_.max_memory) {
               new_book.rang_ = ++max_rang_;
+              int size_of_book = new_book.book_->GetContent().size();
+              current_memory_ += size_of_book;
               auto iter = name_to_book_.insert({book_name, std::move(new_book)});
               while(current_memory_ > settings_.max_memory) {
                   auto to_remove = std::min_element(name_to_book_.begin(), name_to_book_.end(),
@@ -89,7 +91,7 @@ private:
     const Settings& settings_;
     std::mutex mutex_;
     int max_rang_ = 0;
-    int current_memory_ = 0;
+    std::atomic<int> current_memory_ = 0;
 };
 
 

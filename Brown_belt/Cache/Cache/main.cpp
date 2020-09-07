@@ -48,11 +48,17 @@ public:
   const string& GetContent() const override {
     return content_;
   }
+    
+//    const string& GetContent() {
+//         std::lock_guard guard(mutex_);
+//       return content_;
+//     }
 
 private:
   string name_;
   string content_;
   atomic<size_t>& memory_used_by_books_;
+//    std::mutex mutex_;
 };
 
 
