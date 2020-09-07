@@ -35,42 +35,29 @@ public:
       if (it == name_to_book_.end()) {
           Book_Rang new_book;
           new_book.book_ = unpacker_->UnpackBook(book_name);
-          
-
-          
-          if (new_book.book_->GetContent().size() < settings_.max_memory) {
-              size_t book_size = new_book.book_->GetContent().size();
-              
-              
-              new_book.rang_ = ++max_rang_;
-              auto iter = name_to_book_.insert({book_name, new_book});
-              current_memory_ += book_size;
-              
-              while(current_memory_ > settings_.max_memory && !name_to_book_.empty()) {
-                  if (name_to_book_.size() == 0)
-                      break;
-                  auto to_remove = std::min_element(name_to_book_.begin(), name_to_book_.end(),
+        
+          size_t book_size = new_book.book_->GetContent().size();
+          while(current_memory_ + book_size > settings_.max_memory && !name_to_book_.empty()) {
+    
+                auto to_remove = std::min_element(name_to_book_.begin(), name_to_book_.end(),
                             [](const set_of_books::value_type& lhs, const set_of_books::value_type& rhs) {
                       return lhs.second.rang_ < rhs.second.rang_;
                   });
+              
                   current_memory_ -= to_remove->second.book_->GetContent().size();
                   name_to_book_.erase(to_remove);
               }
               
               if (book_size > settings_.max_memory) {
-                  return move(new_book.book_);
+                  return std::move(new_book.book_);
               }
               
-              
-              return iter.first->second.book_;
-          }
-          else
-              return new_book.book_;
-          
-      } else {
-          it->second.rang_++;
-          return it->second.book_;
+          current_memory_ += new_book.book_->GetContent().size();
+          it = name_to_book_.insert({book_name, std::move(new_book)}).first;
       }
+      it->second.rang_ = ++max_rang_;
+      
+      return it->second.book_;
   }
 private:
     std::shared_ptr<IBooksUnpacker> unpacker_;
