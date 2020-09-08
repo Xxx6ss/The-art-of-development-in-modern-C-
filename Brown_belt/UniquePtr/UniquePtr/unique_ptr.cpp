@@ -18,25 +18,24 @@ class UniquePtr {
 private:
     T* ptr_;
 public:
-    UniquePtr() : ptr_(new T) {}
+    UniquePtr() : ptr_(nullptr) {}
     
     UniquePtr(T * ptr) : ptr_(ptr){
 }
-    UniquePtr(const UniquePtr& other) {
-        ptr_ = std::move(other.Get());
-    }
-    UniquePtr(UniquePtr&& other) {
-        this = std::move(other);
+    UniquePtr(const UniquePtr& other) = delete;
+    UniquePtr(UniquePtr&& other) : ptr_(other.ptr_){
+        other.ptr_ = nullptr;
     }
     
-    UniquePtr& operator = (const UniquePtr& other) {
-        ptr_ = std::move(other.Get());
-    }
-    UniquePtr& operator = (nullptr_t other) {
-        ptr_ = nullptr;
+    UniquePtr& operator = (const UniquePtr& other) = delete;
+    UniquePtr& operator = (std::nullptr_t other) {
+        Reset(nullptr);
+        return *this;
     }
     UniquePtr& operator = (UniquePtr&& other) {
-        ptr_ = std::move(other.Get());
+        Reset(other.ptr_);
+        other.ptr_ = nullptr;
+        return *this;
     }
     ~UniquePtr() {
         delete ptr_;
@@ -62,9 +61,7 @@ public:
     }
 
     void Swap(UniquePtr& other) {
-        T* new_ptr = ptr_;
-        ptr_ = other.Get();
-        other.Reset(new_ptr);
+        std::swap(ptr_, other.ptr_);
     }
 
     T * Get() const {
@@ -126,4 +123,5 @@ int main() {
   RUN_TEST(tr, TestLifetime);
   RUN_TEST(tr, TestGetters);
 }
+
 
