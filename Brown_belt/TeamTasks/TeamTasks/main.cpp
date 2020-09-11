@@ -42,59 +42,70 @@ public:
   // подробности см. ниже
   std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(
                         const std::string& person, int task_count) {
-      TasksInfo updated;
+      TasksInfo updates;
       TasksInfo not_updated;
       
       if (deleopers_tasks_[person][TaskStatus::NEW] >= task_count) {
-          deleopers_tasks_[person][TaskStatus::NEW] -= task_count;
-          updated[TaskStatus::NEW] = task_count;
-          not_updated[TaskStatus::IN_PROGRESS] = 0;
-          not_updated[TaskStatus::TESTING] = 0;
-          not_updated[TaskStatus::DONE] = 0;
-          return std::make_pair(updated, not_updated);
+          updates[TaskStatus::IN_PROGRESS] = task_count;
+          not_updated[TaskStatus::IN_PROGRESS] = deleopers_tasks_[person][TaskStatus::IN_PROGRESS];
+          not_updated[TaskStatus::TESTING] = deleopers_tasks_[person][TaskStatus::TESTING];
+          not_updated[TaskStatus::DONE] = deleopers_tasks_[person][TaskStatus::DONE];
           
-      } else if (deleopers_tasks_[person][TaskStatus::NEW] < task_count) {
+          deleopers_tasks_[person][TaskStatus::NEW] -= task_count;
+          deleopers_tasks_[person][TaskStatus::IN_PROGRESS] += updates[TaskStatus::IN_PROGRESS];
+          return std::make_pair(updates, not_updated);
+      } else if (deleopers_tasks_[person][TaskStatus::NEW] < task_count){
           
           task_count -= deleopers_tasks_[person][TaskStatus::NEW];
-          updated[TaskStatus::NEW] = deleopers_tasks_[person][TaskStatus::NEW];
+          updates[TaskStatus::IN_PROGRESS] += deleopers_tasks_[person][TaskStatus::NEW];
           deleopers_tasks_[person][TaskStatus::NEW] = 0;
-          
       }
+      
       if (deleopers_tasks_[person][TaskStatus::IN_PROGRESS] >= task_count) {
-              
-            deleopers_tasks_[person][TaskStatus::IN_PROGRESS] -= task_count;
-            updated[TaskStatus::IN_PROGRESS] = task_count;
-            not_updated[TaskStatus::TESTING] = 0;
-            not_updated[TaskStatus::DONE] = 0;
-            return std::make_pair(updated, not_updated);
-              
-          } else if (deleopers_tasks_[person][TaskStatus::IN_PROGRESS] < task_count) {
-              
-              task_count -= deleopers_tasks_[person][TaskStatus::IN_PROGRESS];
-              updated[TaskStatus::IN_PROGRESS] = deleopers_tasks_[person][TaskStatus::IN_PROGRESS];
-              deleopers_tasks_[person][TaskStatus::IN_PROGRESS] = 0;
-          }
+          updates[TaskStatus::TESTING] = task_count;
+          not_updated[TaskStatus::TESTING] = deleopers_tasks_[person][TaskStatus::TESTING];
+          not_updated[TaskStatus::DONE] = deleopers_tasks_[person][TaskStatus::DONE];
+          
+          deleopers_tasks_[person][TaskStatus::IN_PROGRESS] -= task_count;
+          deleopers_tasks_[person][TaskStatus::TESTING] += updates[TaskStatus::TESTING];
+          return std::make_pair(updates, not_updated);
+      } else if (deleopers_tasks_[person][TaskStatus::IN_PROGRESS] < task_count){
+          
+          task_count -= deleopers_tasks_[person][TaskStatus::IN_PROGRESS];
+          updates[TaskStatus::TESTING] += deleopers_tasks_[person][TaskStatus::IN_PROGRESS];
+          deleopers_tasks_[person][TaskStatus::IN_PROGRESS] = 0;
+      }
       if (deleopers_tasks_[person][TaskStatus::TESTING] >= task_count) {
+          updates[TaskStatus::DONE] = task_count;
+          not_updated[TaskStatus::DONE] = deleopers_tasks_[person][TaskStatus::DONE];
+          
           deleopers_tasks_[person][TaskStatus::TESTING] -= task_count;
-          updated[TaskStatus::TESTING] = task_count;
-          not_updated[TaskStatus::DONE] = 0;
-          return std::make_pair(updated, not_updated);
-      } else if (deleopers_tasks_[person][TaskStatus::TESTING] < task_count) {
+          deleopers_tasks_[person][TaskStatus::DONE] += updates[TaskStatus::DONE];
+          return std::make_pair(updates, not_updated);
+      } else if (deleopers_tasks_[person][TaskStatus::TESTING] < task_count){
+          
           task_count -= deleopers_tasks_[person][TaskStatus::TESTING];
-          updated[TaskStatus::IN_PROGRESS] = deleopers_tasks_[person][TaskStatus::TESTING];
+          updates[TaskStatus::DONE] += deleopers_tasks_[person][TaskStatus::TESTING];
+          deleopers_tasks_[person][TaskStatus::TESTING] = 0;
+      }
+      if (deleopers_tasks_[person][TaskStatus::DONE] >= task_count) {
+          not_updated[TaskStatus::DONE] = deleopers_tasks_[person][TaskStatus::DONE];
+          
+          deleopers_tasks_[person][TaskStatus::DONE] -= task_count;
+          return std::make_pair(updates, not_updated);
+      } else if (deleopers_tasks_[person][TaskStatus::TESTING] < task_count){
+          
+          task_count -= deleopers_tasks_[person][TaskStatus::TESTING];
+          updates[TaskStatus::DONE] += deleopers_tasks_[person][TaskStatus::TESTING];
           deleopers_tasks_[person][TaskStatus::TESTING] = 0;
       }
       
-      if (deleopers_tasks_[person][TaskStatus::DONE] >= task_count) {
-          deleopers_tasks_[person][TaskStatus::DONE] -= task_count;
-          updated[TaskStatus::DONE] = task_count;
-          return std::make_pair(updated, not_updated);
-      } else if (deleopers_tasks_[person][TaskStatus::DONE] < task_count) {
-          task_count -= deleopers_tasks_[person][TaskStatus::DONE];
-          updated[TaskStatus::DONE] = deleopers_tasks_[person][TaskStatus::DONE];
-          deleopers_tasks_[person][TaskStatus::DONE] = 0;
-      }
-      return std::make_pair(updated, not_updated);
+      deleopers_tasks_[person][TaskStatus::IN_PROGRESS] += updates[TaskStatus::IN_PROGRESS];
+      deleopers_tasks_[person][TaskStatus::TESTING] += updates[TaskStatus::TESTING];
+      deleopers_tasks_[person][TaskStatus::DONE] += updates[TaskStatus::DONE];
+      
+      
+      return std::make_pair(updates, not_updated);
   }
     
 private:
